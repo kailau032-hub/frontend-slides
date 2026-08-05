@@ -267,21 +267,6 @@ When converting PowerPoint files:
    - How to customize: `:root` CSS variables for colors, font link for typography, `.reveal` class for animations
    - Inline text editing is available: Hover top-left corner or press E to enter edit mode, click any text to edit, Ctrl+S to save
    - Offer the natural post-draft actions: ask for revisions, edit text directly in the browser, or export/share
-4. **Offer presentation-behaviour customization** — After the first version is delivered,
-   proactively ask the user whether they'd like to tune how the deck *behaves*, and apply
-   their choices. Present these as concrete options (use `AskUserQuestion` when several apply):
-   - **Page-turn effect** — slide transition: none · fade · slide · flip (+ speed)
-   - **Reveal motion** — the on-slide entrance animation: default · off · dynamic
-   - **Hover effect** — on cards/panels: off · lift · glow
-   - **Pointer mode** — presenter aids: off · laser dot · spotlight
-   - **Animation playground** — expose the timing controls (reveal duration/stagger,
-     transition speed) so the user can dial the feel
-
-   These are implemented by the optional editor module (see *"ship the deck with an
-   in-browser editor"*): they map to `data-fx-*` attributes on `<html>` plus a few CSS
-   variables, and the module's **⚙ FX** panel lets the user change them live and the choice
-   persists into the downloaded file. If the user wants a fixed behaviour baked in without
-   the editor, set the same `data-fx-*` attributes / CSS variables directly in the HTML.
 
 ---
 
@@ -465,9 +450,8 @@ or a box — to a URL/path *or another slide*), **font family + numeric size +
 line-height**, **text colour + highlight**, **deck accent + slide-background**
 colour, **snap-to-grid with alignment guides**, insert **text box / image
 (embedded as a data URI) / video (URL or YouTube) / table / date**, slide
-operations (**add blank / duplicate / delete**), a **⚙ FX** panel (page-turn,
-reveal motion, hover, pointer mode + speed — see Phase 5 step 4), and
-**⤓ Download**. Inserted elements are draggable, resizable, and deletable.
+operations (**add blank / duplicate / delete**), and **⤓ Download**. Inserted
+elements are draggable, resizable, and deletable.
 
 To include it, **inline the module's contents** in a `<script>` at the end of
 `<body>`, after the `<deck-stage>` script — inlining (not `<script src>`) keeps

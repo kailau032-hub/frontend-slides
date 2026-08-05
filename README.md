@@ -173,8 +173,10 @@ the agent expands that preview's own CSS and layout system into the full deck.
 ### Add or Modify a Template (single source of truth)
 
 Every template lives in one canonical place: `bold-template-pack/` at the repo
-root. Edit templates there — not in the packaged plugin copy under
-`plugins/frontend-slides/skills/frontend-slides/`, which is a generated mirror.
+root. The packaged plugin under `plugins/frontend-slides/skills/frontend-slides/`
+does **not** contain a second copy — its `bold-template-pack` (and the other
+skill assets) are **symlinks** back to the root, so there is exactly one physical
+copy and editing the root updates both surfaces automatically.
 
 To add a template:
 
@@ -189,13 +191,17 @@ To add a template:
 To modify one, edit that template's `preview.md` / `design.md` (and its index
 entry if the metadata changes).
 
-After any edit at the root, regenerate the plugin copy so the standalone skill
-and the packaged plugin stay identical:
+Because the plugin symlinks the root, your edit is reflected in both places with
+nothing to sync. You only need the helper below if you add a brand-new top-level
+asset or a symlink goes missing:
 
 ```bash
-bash scripts/sync-plugin.sh          # copy root -> plugin
-bash scripts/sync-plugin.sh --check  # verify they match (non-zero if drifted)
+bash scripts/sync-plugin.sh          # (re)create the plugin symlinks
+bash scripts/sync-plugin.sh --check  # verify they exist and resolve
 ```
+
+> Note: symlinks are restored by `git clone` on macOS/Linux. On Windows, cloning
+> preserves them only with symlink support enabled (`git config core.symlinks true`).
 
 This keeps a single place to author and modify templates in one repo, with the
 plugin mirror derived from it rather than maintained by hand.
@@ -561,16 +567,16 @@ This skill uses **progressive disclosure** — the main `SKILL.md` is a workflow
 | `scripts/extract-pptx.py` | PPT content extraction         | Phase 4 (conversion)      |
 | `scripts/deploy.sh`       | Deploy to Vercel               | Phase 6 (sharing)         |
 | `scripts/export-pdf.sh`   | Export slides to PDF           | Phase 6 (sharing)         |
-| `scripts/sync-plugin.sh`  | Regenerate the plugin copy from the canonical root skill | Maintenance |
+| `scripts/sync-plugin.sh`  | (Re)create the plugin's symlinks to the canonical root skill | Maintenance |
 
 Maintenance-only source metadata and regeneration helpers live outside the
 user-facing skill package. Normal users do not need them.
 
-**Single source of truth.** The files above are authored once, at the repo
-root. The packaged plugin at `plugins/frontend-slides/skills/frontend-slides/`
-is a generated mirror — edit a file or template at the root, then run
-`bash scripts/sync-plugin.sh` to refresh the plugin copy so both surfaces stay
-identical. `bash scripts/sync-plugin.sh --check` verifies they match.
+**Single source of truth.** The files above exist once, at the repo root. The
+packaged plugin at `plugins/frontend-slides/skills/frontend-slides/` holds only
+**symlinks** to them, so there is no duplication — edit a file or template at the
+root and both the standalone skill and the plugin see the change. `bash
+scripts/sync-plugin.sh --check` verifies the symlinks resolve.
 
 This design follows agent-skill best practices: give the agent a map first,
 then reveal only the specific files needed for the current choice.
