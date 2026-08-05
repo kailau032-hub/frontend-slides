@@ -436,6 +436,46 @@ PubMed title-search URL (always correct by construction) rather than guessing.
 
 ---
 
+## Optional: ship the deck with an in-browser editor
+
+The deck can carry its own lightweight WYSIWYG editor so the user can revise it
+in any browser — no tooling — and download an edited copy. This is opt-in: only
+include it when the user asks for an editable deck (offer it as a post-delivery
+option, like deploy/PDF).
+
+The editor lives in [`deck-editor.js`](deck-editor.js) — a self-contained module
+(it injects its own CSS and toolbar; no dependencies) built for `<deck-stage>`
+decks. It adds a floating toolbar with: **✎ Edit** (click any text to edit in
+place), **B / I / U / link**, **font family + size**, **text colour +
+highlight**, **deck accent + slide-background** colour, insert **text box /
+image (embedded as a data URI) / video (URL or YouTube) / table / date**, and
+**⤓ Download**. Inserted elements are draggable, resizable, and deletable.
+
+To include it, **inline the module's contents** in a `<script>` at the end of
+`<body>`, after the `<deck-stage>` script — inlining (not `<script src>`) keeps
+the deck a single self-contained file:
+
+```html
+  </deck-stage>
+  <script> /* …the <deck-stage> component… */ </script>
+  <script> /* …paste the entire contents of deck-editor.js here… */ </script>
+</body>
+```
+
+Notes:
+- The editor's UI, its runtime attributes, and edit state are stripped from the
+  downloaded copy, so the export opens clean (view mode) but keeps the module —
+  the saved deck stays editable.
+- The toolbar and drag handles are hidden in `@media print`, so Print → Save as
+  PDF stays clean.
+- The accent-colour control recolours the CSS variables the templates use
+  (`--accent`, `--cobalt`, `--sc`, `--verm`); keep deck accents on CSS
+  variables so this control works.
+- Embedding images/video as data URIs grows the file — warn the user before
+  adding large media, and prefer video-by-URL over embedding big files.
+
+---
+
 ## Supporting Files
 
 | File                                               | Purpose                                                              | When to Read              |
@@ -447,6 +487,7 @@ PubMed title-search URL (always correct by construction) rather than guessing.
 | [viewport-base.css](viewport-base.css)             | Mandatory fixed-stage CSS — copy into every presentation             | Phase 3 (generation)      |
 | [html-template.md](html-template.md)               | HTML structure, JS features, code quality standards                  | Phase 3 (generation)      |
 | [animation-patterns.md](animation-patterns.md)     | CSS/JS animation snippets and effect-to-feeling guide                | Phase 3 (generation)      |
+| [deck-editor.js](deck-editor.js)                   | Optional in-browser WYSIWYG editor to inline into a deck             | On request (editable deck) |
 | [scripts/extract-pptx.py](scripts/extract-pptx.py) | Python script for PPT content extraction                             | Phase 4 (conversion)      |
 | [scripts/deploy.sh](scripts/deploy.sh)             | Deploy slides to Vercel (Method 2 — any agent / custom hosting)       | Phase 6 (sharing)         |
 | [scripts/export-pdf.sh](scripts/export-pdf.sh)     | Export slides to PDF                                                 | Phase 6 (sharing)         |

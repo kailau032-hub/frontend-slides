@@ -30,6 +30,7 @@ ASSETS=(
   "viewport-base.css"
   "html-template.md"
   "animation-patterns.md"
+  "deck-editor.js"
   "bold-template-pack"
   "scripts"
 )
