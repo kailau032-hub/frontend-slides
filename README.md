@@ -18,7 +18,7 @@ New here? This beginner-friendly video walks you through the whole thing, start 
 
 Here is a deck about the skill, made through the skill:
 
-https://github.com/user-attachments/assets/ef57333e-f879-432a-afb9-180388982478
+[https://github.com/user-attachments/assets/ef57333e-f879-432a-afb9-180388982478](https://deck.zarazhang.com/)
 
 ### Key Features
 
