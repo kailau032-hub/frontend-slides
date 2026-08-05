@@ -413,10 +413,16 @@ Workflow:
      no API key required). Use its `search_paper` tool with the reference title;
      read `externalIds` for the `DOI` / `PubMed` id and link to
      `https://doi.org/<DOI>` or `https://pubmed.ncbi.nlm.nih.gov/<PMID>/`.
-   - **Offline fallback.** If no scholarly network is available (e.g. a
-     restricted egress policy blocks Semantic Scholar / CrossRef / PubMed),
-     build a precise **PubMed title-search** URL instead — it resolves to the
-     exact paper without a live lookup:
+   - **If the MCP is unreachable, use `WebSearch`.** A restricted egress policy
+     often blocks the Semantic Scholar / CrossRef / PubMed APIs (and therefore
+     the MCP) while the harness `WebSearch` tool still works. Search the
+     reference title (add "DOI"; restrict with `allowed_domains` like
+     `doi.org`, `pubmed.ncbi.nlm.nih.gov`, the publisher) and read the DOI/PMID
+     off the authoritative result. Verify the hit matches the reference — never
+     accept a guessed or "based on the format" DOI.
+   - **Offline fallback.** If nothing above is available, build a precise
+     **PubMed title-search** URL — it resolves to the exact paper without a live
+     lookup and is always correct by construction:
      `https://pubmed.ncbi.nlm.nih.gov/?term=<url-encoded author + distinctive title words>`.
 3. **Add the link as a superscript reference number** that mirrors the source's
    own citation style — e.g. `…phase III result<a class="cref" href="…">18</a>`
