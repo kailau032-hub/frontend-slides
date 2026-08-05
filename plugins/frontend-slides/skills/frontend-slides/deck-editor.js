@@ -6,7 +6,8 @@
  *
  *   ✎ Edit / ✓ Done   toggle edit mode (click any text to edit in place)
  *   ↶ ↷               undo / redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z)
- *   B I U 🔗           bold / italic / underline / link the selection (reflects caret)
+ *   B I U 🔗           bold / italic / underline / link — 🔗 links a text selection,
+ *                     or the selected floating box, or the focused block/module, to a URL/path
  *   Aa  ##px  ↕lh      font family, numeric size, and line-height for the focused block
  *   A  Hi              text colour + highlight for the selection
  *   Accent  BG         recolour the whole deck's accent, or the current slide bg
@@ -14,7 +15,7 @@
  *   ＋Text ＋Image      insert a draggable text box or an embedded image
  *   ＋Video ＋Table     insert a video (URL / YouTube) or a table
  *   ＋Date             insert today's date
- *   ⧉ ⌫ ◀ ▶            duplicate / delete / move the current slide
+ *   ＋Slide ⧉ ⌫         add a blank slide / duplicate / delete the current slide
  *   ⤓ Download         save the edited deck as a new self-contained .html
  *
  * Inserted images are embedded as data: URIs so the exported file stays
@@ -202,11 +203,39 @@
   function setSize(px) { if (activeEl && px) { record(); activeEl.style.fontSize = px + 'px'; } }
   function setLine(v) { if (activeEl && v) { record(); activeEl.style.lineHeight = v; } }
 
+  /* ---------- linking (text selection, a whole module/block, or a floating box) ---------- */
+  function linkTarget(url, savedRange) {
+    record();
+    if (savedRange) {                             // link just the selected text
+      const anc = savedRange.commonAncestorContainer;
+      const host = (anc.nodeType === 1 ? anc : anc.parentElement).closest('[contenteditable="true"],.dke-textbox');
+      if (host) host.focus();
+      const s = document.getSelection(); s.removeAllRanges(); s.addRange(savedRange);
+      document.execCommand('styleWithCSS', false, false);
+      document.execCommand('createLink', false, url);
+      const a = s.anchorNode && s.anchorNode.parentElement && s.anchorNode.parentElement.closest('a');
+      if (a) { a.target = '_blank'; a.rel = 'noopener'; }
+      return;
+    }
+    if (selectedFloat) {                          // link the whole floating box
+      const skip = c => c.classList && (c.classList.contains('dke-grip') || c.classList.contains('dke-del') || c.classList.contains('dke-rsz'));
+      let a = selectedFloat.querySelector(':scope > a.dke-link');
+      if (!a) { a = h('a', { class: 'dke-link', target: '_blank', rel: 'noopener', style: 'display:block;width:100%;height:100%;color:inherit;text-decoration:none' });
+        [...selectedFloat.children].filter(c => !skip(c)).forEach(c => a.appendChild(c)); selectedFloat.insertBefore(a, selectedFloat.firstChild); }
+      a.href = url;
+    } else if (activeEl) {                         // link the focused block/module
+      const p = activeEl.parentNode;
+      if (p && p.tagName === 'A' && p.classList.contains('dke-link')) p.href = url;
+      else { const a = h('a', { class: 'dke-link', href: url, target: '_blank', rel: 'noopener', style: 'display:contents;color:inherit' }); p.insertBefore(a, activeEl); a.appendChild(activeEl); }
+    }
+  }
+
   /* ---------- slide operations ---------- */
   function afterSlideOp(idx) { setTimeout(() => { rehydrateFloats(); applyEditables(editing); gotoSlide(Math.max(0, Math.min(slideCount() - 1, idx))); }, 0); }
   function dupSlide() { const s = activeSlide(); if (!s) return; record(); const i = activeIndex(); const c = s.cloneNode(true); c.removeAttribute('data-deck-active'); c.removeAttribute('data-deck-slide'); s.after(c); afterSlideOp(i + 1); }
   function delSlide() { if (slideCount() <= 1) return; record(); const i = activeIndex(); activeSlide().remove(); afterSlideOp(i); }
-  function moveSlide(dir) { const s = activeSlide(), i = activeIndex(); const j = i + dir; if (j < 0 || j >= slideCount()) return; record(); const sib = sections()[j]; if (dir < 0) s.parentNode.insertBefore(s, sib); else sib.after(s); afterSlideOp(j); }
+  function commonSlideClass() { const secs = sections(); if (!secs.length) return 'slide'; let c = [...secs[0].classList]; secs.forEach(s => { const cl = [...s.classList]; c = c.filter(x => cl.includes(x)); }); return c.join(' ') || 'slide'; }
+  function addBlankSlide() { record(); const i = activeIndex(); const s = h('section', { class: commonSlideClass() }); s.innerHTML = '<div class="pad"><h2 data-anim>New slide</h2></div>'; const a = activeSlide(); if (a) a.after(s); else stage().appendChild(s); afterSlideOp(i + 1); }
 
   /* ---------- popover (no window.prompt) ---------- */
   function popover(anchor, fields, onOk) {
@@ -294,7 +323,7 @@
   const bB = h('button', { html: '<b>B</b>', title: 'Bold', onmousedown: nP, onclick: () => exec('bold') });
   const bI = h('button', { html: '<i>I</i>', title: 'Italic', onmousedown: nP, onclick: () => exec('italic') });
   const bU = h('button', { html: '<u>U</u>', title: 'Underline', onmousedown: nP, onclick: () => exec('underline') });
-  const bLink = h('button', { text: '🔗', title: 'Link selection', onmousedown: nP, onclick: () => popover(bLink, [{ label: 'URL', ph: 'https://…' }], ([u]) => u && exec('createLink', u)) });
+  const bLink = h('button', { text: '🔗', title: 'Link text / selected module / box', onmousedown: nP, onclick: () => { const g = document.getSelection(); const rng = (g && g.rangeCount && !g.isCollapsed && g.toString().trim()) ? g.getRangeAt(0).cloneRange() : null; popover(bLink, [{ label: 'URL / path', ph: 'https://… or /path' }], ([u]) => u && linkTarget(u, rng)); } });
   const selFont = h('select', { title: 'Font', onmousedown: nP, onchange: e => setFont(e.target.value) }, FONTS.map(f => h('option', { value: f[1] }, f[0])));
   const szIn = h('input', { type: 'number', title: 'Font size (px)', min: '6', max: '400', onmousedown: e => e.stopPropagation(), onchange: e => setSize(+e.target.value) });
   const lhIn = h('input', { type: 'number', title: 'Line height', min: '0.6', max: '4', step: '0.05', onmousedown: e => e.stopPropagation(), onchange: e => setLine(e.target.value) });
@@ -309,10 +338,9 @@
   const bVid = h('button', { text: '＋Video', onclick: () => popover(bVid, [{ label: 'URL', ph: 'mp4 link or YouTube URL' }], ([u]) => u && insertVideo(u)) });
   const bTable = h('button', { text: '＋Table', onclick: () => popover(bTable, [{ label: 'Rows', type: 'number', value: '3' }, { label: 'Cols', type: 'number', value: '3' }], ([r, c]) => insertTable(+r || 3, +c || 3)) });
   const bDate = h('button', { text: '＋Date', onclick: insertDate });
+  const bBlank = h('button', { text: '＋Slide', title: 'Add blank slide', onmousedown: nP, onclick: addBlankSlide });
   const bDup = h('button', { text: '⧉', title: 'Duplicate slide', onmousedown: nP, onclick: dupSlide });
   const bDel = h('button', { text: '⌫', title: 'Delete slide', onmousedown: nP, onclick: delSlide });
-  const bL = h('button', { text: '◀', title: 'Move slide left', onmousedown: nP, onclick: () => moveSlide(-1) });
-  const bR = h('button', { text: '▶', title: 'Move slide right', onmousedown: nP, onclick: () => moveSlide(1) });
   const bDl = h('button', { text: '⤓ Download', onclick: download });
   const sep = () => h('span', { class: 'dke-sep' });
 
@@ -324,7 +352,7 @@
     h('span', { class: 'dke-grp' }, [h('span', { text: 'Acc' }), colAcc, h('span', { text: 'BG' }), colBg]), sep(),
     bSnap, sep(),
     h('span', { class: 'dke-grp' }, [bText, lblImg, bVid, bTable, bDate]), sep(),
-    h('span', { class: 'dke-grp' }, [bDup, bDel, bL, bR]), sep(),
+    h('span', { class: 'dke-grp' }, [bBlank, bDup, bDel]), sep(),
     bDl
   ]);
   document.body.append(bar, h('div', { class: 'dke-hint', text: 'Click text to edit · drag ⠿ · × delete · Ctrl+Z undo · Esc to finish' }));
@@ -334,6 +362,8 @@
   /* click an existing deck image to swap it */
   document.addEventListener('click', e => {
     if (!editing) return;
+    const lnk = e.target.closest && e.target.closest('a');
+    if (lnk && lnk.closest('deck-stage')) e.preventDefault();   // don't navigate while editing
     const img = e.target.closest && e.target.closest('deck-stage img');
     if (img && !img.closest('.dke-float')) { const inp = h('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: ev => ev.target.files[0] && insertImageFile(ev.target.files[0], img) }); document.body.appendChild(inp); inp.click(); setTimeout(() => inp.remove(), 1000); }
   });
