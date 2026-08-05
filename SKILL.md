@@ -394,6 +394,42 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 
 ---
 
+## Cross-linking citations to primary research (source has references)
+
+When you build a deck from an academic paper, review, or any document with a
+reference list, **crosslink each named study to the primary research** so the
+audience can jump to the source. Do this whenever a slide names a specific
+trial, molecule, or finding that maps to a numbered reference in the source.
+
+Workflow:
+
+1. **Identify the study and its reference** in the source's reference list
+   (author, title, year). The markitdown skill's output preserves the numbered
+   list — match the mention on the slide to its reference number.
+2. **Resolve a stable link — DOI first, then PubMed.** The reference list rarely
+   carries a DOI, so resolve it:
+   - **Preferred — Semantic Scholar MCP.** This repo declares a
+     `semantic-scholar` MCP server in `.mcp.json` (`uvx semantic-scholar-mcp`,
+     no API key required). Use its `search_paper` tool with the reference title;
+     read `externalIds` for the `DOI` / `PubMed` id and link to
+     `https://doi.org/<DOI>` or `https://pubmed.ncbi.nlm.nih.gov/<PMID>/`.
+   - **Offline fallback.** If no scholarly network is available (e.g. a
+     restricted egress policy blocks Semantic Scholar / CrossRef / PubMed),
+     build a precise **PubMed title-search** URL instead — it resolves to the
+     exact paper without a live lookup:
+     `https://pubmed.ncbi.nlm.nih.gov/?term=<url-encoded author + distinctive title words>`.
+3. **Add the link as a superscript reference number** that mirrors the source's
+   own citation style — e.g. `…phase III result<a class="cref" href="…">18</a>`
+   — styled small and in the accent colour, `target="_blank" rel="noopener"`.
+   Keep the source's reference numbers so the deck stays traceable to the paper.
+4. Note the convention once on the closing/citation slide (e.g. _"Superscripts
+   link to the cited primary studies."_).
+
+Never fabricate a DOI or PMID. If you cannot resolve a specific paper, use the
+PubMed title-search URL (always correct by construction) rather than guessing.
+
+---
+
 ## Supporting Files
 
 | File                                               | Purpose                                                              | When to Read              |

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v markitdown >/dev/null 2>&1 || pip install -q 'markitdown[pdf,docx,pptx,xlsx]' >/dev/null 2>&1 || true"
+            "command": "{ command -v markitdown >/dev/null 2>&1 || pip install -q 'markitdown[pdf,docx,pptx,xlsx]' >/dev/null 2>&1; command -v uvx >/dev/null 2>&1 || pip install -q uv >/dev/null 2>&1; } || true"
           }
         ]
       }
