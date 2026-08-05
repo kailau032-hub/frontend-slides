@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v markitdown >/dev/null 2>&1 || pip install -q 'markitdown[pdf,docx,pptx,xlsx]' >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}
