@@ -273,18 +273,48 @@ When converting PowerPoint files:
 
 ## Phase 6: Share & Export (Optional)
 
-After delivery, **ask the user:** _"Would you like to share this presentation? I can deploy it to a live URL (works on any device including phones) or export it as a PDF."_
+After delivery, **ask the user:** _"Would you like to share this presentation? I can publish it to a live URL (works on any device including phones) or export it as a PDF."_
 
 Options:
 
-- **Deploy to URL** — Shareable link that works on any device
+- **Publish to a live URL** — Shareable link that works on any device
 - **Export to PDF** — Universal file for email, Slack, print
 - **Both**
 - **No thanks**
 
 If the user declines, stop here. If they choose one or both, proceed below.
 
-### 6A: Deploy to a Live URL (Vercel)
+### 6A: Publish to a Live URL
+
+There are two ways to get a live URL. Pick based on where the skill is running:
+
+#### Method 1 — Claude Artifact (preferred when running inside Claude)
+
+If you are Claude (Claude Code or claude.ai), publish the finished deck directly
+as an **Artifact** — a hosted, shareable web page on claude.ai. No account,
+token, CLI, or third-party service is involved, and because the deck is a single
+self-contained HTML file, it satisfies the Artifact sandbox out of the box.
+
+**Requirement — the deck must be fully self-contained.** The Artifact runtime
+enforces a strict CSP that blocks every external request: CDN scripts, external
+stylesheets, remote fonts, and remote images all fail. Before publishing:
+
+- Inline all CSS and JavaScript (the skill already does this).
+- Embed images as `data:` URIs rather than linking remote/local files.
+- **Fonts:** remote font links (Google Fonts, Fontshare) will NOT load in an
+  Artifact. Either embed the font as a base64 `@font-face` `src`, or fall back
+  to a self-contained font stack. Do this before publishing, or the deck renders
+  in a fallback system font.
+
+**To publish:** render the deck's HTML file as an Artifact, then give the user
+the returned URL. Artifacts are private by default; the user chooses whether to
+share. Re-publishing the same file keeps the same URL, so updates are in place.
+
+This is the recommended path in Claude — it keeps everything in one place with
+zero setup for the user. If the deck can't be made fully self-contained (e.g. it
+depends on a large external asset), use Method 2 instead.
+
+#### Method 2 — Vercel (any agent, or when you want your own hosting/domain)
 
 This deploys the presentation to Vercel — a free hosting platform. The link works on any device (phones, tablets, laptops) and stays live until the user takes it down.
 
@@ -376,5 +406,5 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | [html-template.md](html-template.md)               | HTML structure, JS features, code quality standards                  | Phase 3 (generation)      |
 | [animation-patterns.md](animation-patterns.md)     | CSS/JS animation snippets and effect-to-feeling guide                | Phase 3 (generation)      |
 | [scripts/extract-pptx.py](scripts/extract-pptx.py) | Python script for PPT content extraction                             | Phase 4 (conversion)      |
-| [scripts/deploy.sh](scripts/deploy.sh)             | Deploy slides to Vercel for instant sharing                          | Phase 6 (sharing)         |
+| [scripts/deploy.sh](scripts/deploy.sh)             | Deploy slides to Vercel (Method 2 — any agent / custom hosting)       | Phase 6 (sharing)         |
 | [scripts/export-pdf.sh](scripts/export-pdf.sh)     | Export slides to PDF                                                 | Phase 6 (sharing)         |

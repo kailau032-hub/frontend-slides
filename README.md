@@ -589,11 +589,23 @@ This skill was born from the belief that:
 
 ## Sharing Your Presentations
 
-After creating a presentation, the skill offers two ways to share it:
+After creating a presentation, the skill offers a live URL or a PDF.
 
-### Deploy to a Live URL
+### Publish to a Live URL
 
-One command deploys your slides to a permanent, shareable URL that works on any device — phones, tablets, laptops:
+There are two ways to get a shareable link that works on any device — phones, tablets, laptops:
+
+**Claude Artifact (preferred when running inside Claude).** Because every deck is
+a single self-contained HTML file, Claude can publish it directly as an
+[Artifact](https://support.anthropic.com/en/articles/9487310-what-are-artifacts) —
+a hosted claude.ai page — with no account, token, CLI, or third-party service.
+Just ask Claude to publish the finished deck; you get a private URL you can
+choose to share, and re-publishing keeps the same link. (Artifacts run under a
+strict no-external-resources sandbox, so remote fonts/images must be embedded —
+Claude handles that before publishing.)
+
+**Vercel (any agent, or when you want your own hosting/domain).** One command
+deploys your slides to a permanent, shareable URL:
 
 ```bash
 bash scripts/deploy.sh ./my-deck/
