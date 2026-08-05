@@ -7,7 +7,8 @@
  *   ✎ Edit / ✓ Done   toggle edit mode (click any text to edit in place)
  *   ↶ ↷               undo / redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z)
  *   B I U 🔗           bold / italic / underline / link — 🔗 links a text selection,
- *                     or the selected floating box, or the focused block/module, to a URL/path
+ *                     the selected floating box, or the focused block/module, to a URL/path
+ *                     — or to another slide in the deck (in-deck jump)
  *   Aa  ##px  ↕lh      font family, numeric size, and line-height for the focused block
  *   A  Hi              text colour + highlight for the selection
  *   Accent  BG         recolour the whole deck's accent, or the current slide bg
@@ -204,29 +205,37 @@
   function setLine(v) { if (activeEl && v) { record(); activeEl.style.lineHeight = v; } }
 
   /* ---------- linking (text selection, a whole module/block, or a floating box) ---------- */
-  function linkTarget(url, savedRange) {
+  // target is {url:'…'} for an external link, or {slide:N} for an in-deck jump.
+  function applyAnchorAttrs(a, t) {
+    if (!a) return;
+    if (t.slide) { a.setAttribute('href', '#' + t.slide); a.setAttribute('data-deck-goto', String(t.slide)); a.classList.add('dke-slidelink'); a.removeAttribute('target'); a.removeAttribute('rel'); }
+    else { a.setAttribute('href', t.url); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); a.removeAttribute('data-deck-goto'); a.classList.remove('dke-slidelink'); }
+  }
+  function linkTarget(t, savedRange) {
     record();
+    const href = t.slide ? '#' + t.slide : t.url;
     if (savedRange) {                             // link just the selected text
       const anc = savedRange.commonAncestorContainer;
       const host = (anc.nodeType === 1 ? anc : anc.parentElement).closest('[contenteditable="true"],.dke-textbox');
       if (host) host.focus();
       const s = document.getSelection(); s.removeAllRanges(); s.addRange(savedRange);
       document.execCommand('styleWithCSS', false, false);
-      document.execCommand('createLink', false, url);
-      const a = s.anchorNode && s.anchorNode.parentElement && s.anchorNode.parentElement.closest('a');
-      if (a) { a.target = '_blank'; a.rel = 'noopener'; }
+      document.execCommand('createLink', false, href);
+      applyAnchorAttrs(s.anchorNode && s.anchorNode.parentElement && s.anchorNode.parentElement.closest('a'), t);
       return;
     }
     if (selectedFloat) {                          // link the whole floating box
       const skip = c => c.classList && (c.classList.contains('dke-grip') || c.classList.contains('dke-del') || c.classList.contains('dke-rsz'));
       let a = selectedFloat.querySelector(':scope > a.dke-link');
-      if (!a) { a = h('a', { class: 'dke-link', target: '_blank', rel: 'noopener', style: 'display:block;width:100%;height:100%;color:inherit;text-decoration:none' });
+      if (!a) { a = h('a', { class: 'dke-link', style: 'display:block;width:100%;height:100%;color:inherit;text-decoration:none' });
         [...selectedFloat.children].filter(c => !skip(c)).forEach(c => a.appendChild(c)); selectedFloat.insertBefore(a, selectedFloat.firstChild); }
-      a.href = url;
+      applyAnchorAttrs(a, t);
     } else if (activeEl) {                         // link the focused block/module
       const p = activeEl.parentNode;
-      if (p && p.tagName === 'A' && p.classList.contains('dke-link')) p.href = url;
-      else { const a = h('a', { class: 'dke-link', href: url, target: '_blank', rel: 'noopener', style: 'display:contents;color:inherit' }); p.insertBefore(a, activeEl); a.appendChild(activeEl); }
+      let a;
+      if (p && p.tagName === 'A' && p.classList.contains('dke-link')) a = p;
+      else { a = h('a', { class: 'dke-link', style: 'display:contents;color:inherit' }); p.insertBefore(a, activeEl); a.appendChild(activeEl); }
+      applyAnchorAttrs(a, t);
     }
   }
 
@@ -323,7 +332,11 @@
   const bB = h('button', { html: '<b>B</b>', title: 'Bold', onmousedown: nP, onclick: () => exec('bold') });
   const bI = h('button', { html: '<i>I</i>', title: 'Italic', onmousedown: nP, onclick: () => exec('italic') });
   const bU = h('button', { html: '<u>U</u>', title: 'Underline', onmousedown: nP, onclick: () => exec('underline') });
-  const bLink = h('button', { text: '🔗', title: 'Link text / selected module / box', onmousedown: nP, onclick: () => { const g = document.getSelection(); const rng = (g && g.rangeCount && !g.isCollapsed && g.toString().trim()) ? g.getRangeAt(0).cloneRange() : null; popover(bLink, [{ label: 'URL / path', ph: 'https://… or /path' }], ([u]) => u && linkTarget(u, rng)); } });
+  const bLink = h('button', { text: '🔗', title: 'Link text / module / box → URL or slide', onmousedown: nP, onclick: () => {
+    const g = document.getSelection(); const rng = (g && g.rangeCount && !g.isCollapsed && g.toString().trim()) ? g.getRangeAt(0).cloneRange() : null;
+    popover(bLink, [{ label: 'URL / path', ph: 'https://… or /path' }, { label: 'or → slide #', type: 'number', ph: 'e.g. 7' }], ([u, sl]) => {
+      const t = (sl && +sl > 0) ? { slide: +sl } : (u ? { url: u } : null); if (t) linkTarget(t, rng);
+    }); } });
   const selFont = h('select', { title: 'Font', onmousedown: nP, onchange: e => setFont(e.target.value) }, FONTS.map(f => h('option', { value: f[1] }, f[0])));
   const szIn = h('input', { type: 'number', title: 'Font size (px)', min: '6', max: '400', onmousedown: e => e.stopPropagation(), onchange: e => setSize(+e.target.value) });
   const lhIn = h('input', { type: 'number', title: 'Line height', min: '0.6', max: '4', step: '0.05', onmousedown: e => e.stopPropagation(), onchange: e => setLine(e.target.value) });
@@ -360,6 +373,14 @@
   rehydrateFloats();
 
   /* click an existing deck image to swap it */
+  // In-deck slide links (data-deck-goto) navigate to that slide — works in view
+  // mode and in the exported deck (this module ships with it). Registered before
+  // the edit handler so it runs in both; it only acts when NOT editing.
+  document.addEventListener('click', e => {
+    if (editing) return;
+    const a = e.target.closest && e.target.closest('a[data-deck-goto]');
+    if (a && a.closest('deck-stage')) { e.preventDefault(); const n = parseInt(a.getAttribute('data-deck-goto'), 10); if (n >= 1) gotoSlide(n - 1); }
+  }, true);
   document.addEventListener('click', e => {
     if (!editing) return;
     const lnk = e.target.closest && e.target.closest('a');
