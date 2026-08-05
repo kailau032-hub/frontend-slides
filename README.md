@@ -170,6 +170,36 @@ loads the full `design.md` for exactly one bold template only after the user
 picks that template for the final deck. If the user picks a custom wildcard,
 the agent expands that preview's own CSS and layout system into the full deck.
 
+### Add or Modify a Template (single source of truth)
+
+Every template lives in one canonical place: `bold-template-pack/` at the repo
+root. Edit templates there — not in the packaged plugin copy under
+`plugins/frontend-slides/skills/frontend-slides/`, which is a generated mirror.
+
+To add a template:
+
+1. Create `bold-template-pack/templates/<your-slug>/` with a `preview.md`
+   (lightweight title-slide card) and a `design.md` (full design system),
+   mirroring an existing template such as `signal/`.
+2. Register it in `bold-template-pack/selection-index.json`: append an entry
+   with `slug`, `name`, `tagline`, `mood`, `tone`, `formality`, `density`,
+   `scheme`, `best_for`, `avoid_for`, and the relative
+   `preview_md` / `design_md` paths, then bump `template_count`.
+
+To modify one, edit that template's `preview.md` / `design.md` (and its index
+entry if the metadata changes).
+
+After any edit at the root, regenerate the plugin copy so the standalone skill
+and the packaged plugin stay identical:
+
+```bash
+bash scripts/sync-plugin.sh          # copy root -> plugin
+bash scripts/sync-plugin.sh --check  # verify they match (non-zero if drifted)
+```
+
+This keeps a single place to author and modify templates in one repo, with the
+plugin mirror derived from it rather than maintained by hand.
+
 ## Bold Template Gallery
 
 Frontend Slides can now draw from the 34 bold design systems in [`beautiful-html-templates`](https://github.com/zarazhangrui/beautiful-html-templates). Three screenshots per template show how each visual system handles different slide layouts. Click any template name to inspect the source template library.
@@ -531,9 +561,16 @@ This skill uses **progressive disclosure** — the main `SKILL.md` is a workflow
 | `scripts/extract-pptx.py` | PPT content extraction         | Phase 4 (conversion)      |
 | `scripts/deploy.sh`       | Deploy to Vercel               | Phase 6 (sharing)         |
 | `scripts/export-pdf.sh`   | Export slides to PDF           | Phase 6 (sharing)         |
+| `scripts/sync-plugin.sh`  | Regenerate the plugin copy from the canonical root skill | Maintenance |
 
 Maintenance-only source metadata and regeneration helpers live outside the
 user-facing skill package. Normal users do not need them.
+
+**Single source of truth.** The files above are authored once, at the repo
+root. The packaged plugin at `plugins/frontend-slides/skills/frontend-slides/`
+is a generated mirror — edit a file or template at the root, then run
+`bash scripts/sync-plugin.sh` to refresh the plugin copy so both surfaces stay
+identical. `bash scripts/sync-plugin.sh --check` verifies they match.
 
 This design follows agent-skill best practices: give the agent a map first,
 then reveal only the specific files needed for the current choice.
