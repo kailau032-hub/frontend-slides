@@ -17,6 +17,9 @@
  *   ＋Video ＋Table     insert a video (URL / YouTube) or a table
  *   ＋Date             insert today's date
  *   ＋Slide ⧉ ⌫         add a blank slide / duplicate / delete the current slide
+ *   ⚙ FX               presentation effects — page-turn (fade/slide/flip), reveal
+ *                     motion, hover effect, pointer (laser/spotlight), turn speed, and a
+ *                     basic Animation Playground (reveal duration / stagger / distance + replay)
  *   ⤓ Download         save the edited deck as a new self-contained .html
  *
  * Inserted images are embedded as data: URIs so the exported file stays
@@ -262,7 +265,7 @@
   function download() {
     const was = editing; if (was) setEdit(false); selectFloat(null); clearGuides();
     const clone = document.documentElement.cloneNode(true);
-    clone.querySelectorAll('.dke-bar,.dke-hint,.dke-pop,.dke-guide,#deck-stage-print-page').forEach(n => n.remove());
+    clone.querySelectorAll('.dke-bar,.dke-hint,.dke-pop,.dke-guide,.dke-fx-pointer,.dke-fx-spot,#deck-stage-print-page').forEach(n => n.remove());
     clone.querySelectorAll('[data-deck-active],[data-deck-slide]').forEach(n => { n.removeAttribute('data-deck-active'); n.removeAttribute('data-deck-slide'); });
     clone.querySelectorAll('[contenteditable]').forEach(n => n.removeAttribute('contenteditable'));
     clone.querySelectorAll('[data-dke-edit]').forEach(n => n.removeAttribute('data-dke-edit'));
@@ -324,6 +327,68 @@
     @media print{.dke-bar,.dke-hint,.dke-guide,.dke-float .dke-grip,.dke-float .dke-del,.dke-float .dke-rsz{display:none !important;}.dke-float{outline:none !important;}}
   ` }));
 
+  /* ---------- presentation effects: page-turn / motion / hover / pointer ---------- */
+  document.head.appendChild(h('style', { id: 'dke-fx-css', html: `
+    html[data-fx-transition="fade"] deck-stage>section{transition:opacity var(--fx-td,.45s) ease;}
+    html[data-fx-transition="slide"] deck-stage>section{transition:opacity var(--fx-td,.45s) ease, transform var(--fx-td,.45s) ease;}
+    html[data-fx-transition="slide"] deck-stage>section:not([data-deck-active]){transform:translateX(64px);}
+    html[data-fx-transition="flip"] deck-stage>section{transition:opacity var(--fx-td,.5s) ease, transform var(--fx-td,.5s) ease;transform-origin:50% 50%;backface-visibility:hidden;}
+    html[data-fx-transition="flip"] deck-stage>section:not([data-deck-active]){transform:perspective(1600px) rotateY(14deg) scale(.97);}
+    html[data-fx-hover="lift"] deck-stage .card,html[data-fx-hover="lift"] deck-stage .stat{transition:transform .2s ease,box-shadow .2s ease;}
+    html[data-fx-hover="lift"] deck-stage .card:hover,html[data-fx-hover="lift"] deck-stage .stat:hover{transform:translateY(-6px);box-shadow:0 16px 34px rgba(0,0,0,.20);}
+    html[data-fx-hover="glow"] deck-stage .card:hover,html[data-fx-hover="glow"] deck-stage .stat:hover{box-shadow:0 0 0 2px var(--cobalt,#2f6bff),0 0 28px rgba(47,107,255,.4);transition:box-shadow .2s ease;}
+    html[data-fx-motion="off"] [data-anim]{animation:none !important;opacity:1 !important;transform:none !important;}
+    html[data-fx-motion="dynamic"] [data-deck-active] [data-anim]{animation-duration:var(--fx-rd,.9s);}
+    /* animation playground (basic) — reveal duration / stagger / distance, gated by data-fx-anim so untouched decks are unaffected */
+    html[data-fx-anim="on"] deck-stage [data-deck-active] [data-anim]{animation-duration:var(--fx-rd,.72s) !important;animation-delay:calc(var(--d,0s) * var(--fx-stag,1)) !important;}
+    html[data-fx-anim="on"] deck-stage [data-anim]:not([data-anim="fade"]){transform:translateY(var(--fx-dist,22px));}
+    .dke-fx-pointer{position:fixed;z-index:2147483000;pointer-events:none;width:22px;height:22px;border-radius:50%;transform:translate(-50%,-50%);display:none;background:radial-gradient(circle,#ff3b3b,rgba(255,59,59,.2) 55%,transparent 70%);box-shadow:0 0 14px 4px rgba(255,59,59,.5);}
+    .dke-fx-spot{position:fixed;inset:0;z-index:2147482990;pointer-events:none;display:none;background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),transparent 0,transparent 190px,rgba(0,0,0,.6) 480px);}
+    .dke-pop select{background:#1b2130;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;height:32px;font:inherit;padding:0 8px;flex:1;}
+    .dke-pop input[type=range]{flex:1;}
+    .dke-pop-h{color:#8ea2ff;font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase;margin-top:6px;border-top:1px solid rgba(255,255,255,.14);padding-top:9px;}
+    @media print{.dke-fx-pointer,.dke-fx-spot{display:none !important;}}
+  ` }));
+  const fxDot = h('div', { class: 'dke-fx-pointer' }), fxSpot = h('div', { class: 'dke-fx-spot' });
+  document.body.append(fxDot, fxSpot);
+  function applyPointer() { const m = document.documentElement.dataset.fxPointer || 'off'; fxDot.style.display = m === 'laser' ? 'block' : 'none'; fxSpot.style.display = m === 'spotlight' ? 'block' : 'none'; }
+  window.addEventListener('mousemove', e => { const m = document.documentElement.dataset.fxPointer; if (m === 'laser') { fxDot.style.left = e.clientX + 'px'; fxDot.style.top = e.clientY + 'px'; } else if (m === 'spotlight') { fxSpot.style.setProperty('--mx', e.clientX + 'px'); fxSpot.style.setProperty('--my', e.clientY + 'px'); } }, { passive: true });
+  // Re-trigger the current slide's reveal animation (Animation Playground: Replay).
+  function replayReveal() { const s = activeSlide(); if (!s) return; s.removeAttribute('data-deck-active'); void s.offsetWidth; s.setAttribute('data-deck-active', ''); }
+  function fxPanel(anchor) {
+    closePop();
+    const R = document.documentElement;
+    const row = (label, attr, opts, after) => { const s = h('select', { onchange: e => { e.target.value ? R.setAttribute(attr, e.target.value) : R.removeAttribute(attr); after && after(); } }, opts.map(o => h('option', { value: o[1] }, o[0]))); s.value = R.getAttribute(attr) || opts[0][1]; return h('div', { class: 'row' }, [h('span', { text: label, style: 'min-width:104px' }), s]); };
+    const pop = h('div', { class: 'dke-pop', style: 'min-width:320px' });
+    pop.append(
+      row('Page-turn', 'data-fx-transition', [['None', 'none'], ['Fade', 'fade'], ['Slide', 'slide'], ['Flip', 'flip']]),
+      row('Reveal motion', 'data-fx-motion', [['Default', ''], ['Off', 'off'], ['Dynamic', 'dynamic']]),
+      row('Hover effect', 'data-fx-hover', [['Off', ''], ['Lift', 'lift'], ['Glow', 'glow']]),
+      row('Pointer mode', 'data-fx-pointer', [['Off', 'off'], ['Laser', 'laser'], ['Spotlight', 'spotlight']], applyPointer)
+    );
+    const dur = h('input', { type: 'range', min: '150', max: '1200', step: '50', value: String((parseFloat(getComputedStyle(R).getPropertyValue('--fx-td')) || .45) * 1000), oninput: e => R.style.setProperty('--fx-td', (e.target.value / 1000) + 's') });
+    pop.append(h('div', { class: 'row' }, [h('span', { text: 'Turn speed (ms)', style: 'min-width:104px' }), dur]));
+
+    // ── Animation playground (basic) — extend this block with more reveal controls in future ──
+    pop.append(h('div', { class: 'dke-pop-h', text: 'Animation playground' }));
+    const revDur = h('input', { type: 'range', min: '150', max: '2000', step: '50', value: String((parseFloat(getComputedStyle(R).getPropertyValue('--fx-rd')) || .72) * 1000), oninput: e => { R.setAttribute('data-fx-anim', 'on'); R.style.setProperty('--fx-rd', (e.target.value / 1000) + 's'); } });
+    const revStag = h('input', { type: 'range', min: '0', max: '2', step: '0.05', value: String(parseFloat(getComputedStyle(R).getPropertyValue('--fx-stag')) || 1), oninput: e => { R.setAttribute('data-fx-anim', 'on'); R.style.setProperty('--fx-stag', e.target.value); } });
+    const revDist = h('input', { type: 'range', min: '0', max: '120', step: '2', value: String(parseFloat(getComputedStyle(R).getPropertyValue('--fx-dist')) || 22), oninput: e => { R.setAttribute('data-fx-anim', 'on'); R.style.setProperty('--fx-dist', e.target.value + 'px'); } });
+    pop.append(
+      h('div', { class: 'row' }, [h('span', { text: 'Reveal (ms)', style: 'min-width:104px' }), revDur]),
+      h('div', { class: 'row' }, [h('span', { text: 'Stagger ×', style: 'min-width:104px' }), revStag]),
+      h('div', { class: 'row' }, [h('span', { text: 'Distance (px)', style: 'min-width:104px' }), revDist]),
+      h('div', { class: 'row' }, [
+        h('button', { text: '▶ Replay', onclick: replayReveal }),
+        h('button', { class: 'ghost', text: 'Reset', onclick: () => { ['--fx-rd', '--fx-stag', '--fx-dist'].forEach(v => R.style.removeProperty(v)); R.removeAttribute('data-fx-anim'); replayReveal(); } })
+      ])
+    );
+    pop.append(h('div', { class: 'row' }, [h('button', { class: 'ghost', text: 'Close', onclick: closePop })]));
+    document.body.appendChild(pop);
+    const r = anchor.getBoundingClientRect(); pop.style.top = (r.bottom + 8) + 'px'; pop.style.left = Math.min(r.left, innerWidth - 340) + 'px';
+    window.__dkePop = pop;
+  }
+
   /* ---------- build toolbar ---------- */
   const nP = e => e.preventDefault();
   const bEdit = h('button', { class: 'dke-primary', text: '✎ Edit', onmousedown: nP, onclick: () => setEdit(!editing) });
@@ -354,6 +419,7 @@
   const bBlank = h('button', { text: '＋Slide', title: 'Add blank slide', onmousedown: nP, onclick: addBlankSlide });
   const bDup = h('button', { text: '⧉', title: 'Duplicate slide', onmousedown: nP, onclick: dupSlide });
   const bDel = h('button', { text: '⌫', title: 'Delete slide', onmousedown: nP, onclick: delSlide });
+  const bFX = h('button', { text: '⚙ FX', title: 'Presentation effects (page-turn, motion, hover, pointer)', onmousedown: nP, onclick: () => fxPanel(bFX) });
   const bDl = h('button', { text: '⤓ Download', onclick: download });
   const sep = () => h('span', { class: 'dke-sep' });
 
@@ -366,11 +432,13 @@
     bSnap, sep(),
     h('span', { class: 'dke-grp' }, [bText, lblImg, bVid, bTable, bDate]), sep(),
     h('span', { class: 'dke-grp' }, [bBlank, bDup, bDel]), sep(),
+    bFX, sep(),
     bDl
   ]);
   document.body.append(bar, h('div', { class: 'dke-hint', text: 'Click text to edit · drag ⠿ · × delete · Ctrl+Z undo · Esc to finish' }));
   refreshUndo();
   rehydrateFloats();
+  applyPointer();   // restore pointer overlay if the (exported) deck had one set
 
   /* click an existing deck image to swap it */
   // In-deck slide links (data-deck-goto) navigate to that slide — works in view
