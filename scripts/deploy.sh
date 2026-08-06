@@ -80,8 +80,11 @@ elif [[ -d "$INPUT" ]]; then
         err "Make sure your presentation folder has an index.html."
         exit 1
     fi
-    DEPLOY_DIR="$INPUT"
-    CLEANUP_TEMP=false
+    # Deploy from a temp copy so the source folder is never modified (we strip the
+    # editor control bar on the copy just before deploying).
+    DEPLOY_DIR=$(mktemp -d)
+    cp -r "$INPUT"/. "$DEPLOY_DIR/"
+    CLEANUP_TEMP=true
 else
     err "'$INPUT' is not a valid HTML file or directory."
     exit 1
@@ -183,6 +186,17 @@ if [[ "$CLEANUP_TEMP" == "true" ]]; then
     RENAMED_DIR="$(dirname "$DEPLOY_DIR")/$DECK_NAME"
     mv "$DEPLOY_DIR" "$RENAMED_DIR"
     DEPLOY_DIR="$RENAMED_DIR"
+fi
+
+# Output mode: strip the editor control bar on the deployed copy so the audience
+# never sees the toolbar (only if the deck bundles the deck-editor module).
+if [[ -f "$DEPLOY_DIR/index.html" ]]; then
+    python3 - "$DEPLOY_DIR/index.html" <<'PY' 2>/dev/null || true
+import sys, re
+p = sys.argv[1]; s = open(p, encoding='utf-8').read()
+if '__deckEditorLoaded' in s and 'data-deck-locked' not in s:
+    open(p, 'w', encoding='utf-8').write(re.sub(r'<html\b', '<html data-deck-locked', s, count=1))
+PY
 fi
 
 DEPLOY_OUTPUT=$($VERCEL_CMD deploy "$DEPLOY_DIR" --yes --prod 2>&1) || {

@@ -198,6 +198,12 @@ const page = await browser.newPage({
 // Load the presentation
 await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
 
+// Output mode: remove the editor control bar (if present) so it never appears in the PDF
+await page.evaluate(() => {
+  document.documentElement.setAttribute('data-deck-locked', '');
+  document.querySelectorAll('.dke-bar,.dke-hint,.dke-pop,.dke-guide,.dke-fx-pointer,.dke-fx-spot').forEach(e => e.remove());
+});
+
 // Wait for fonts to load
 await page.evaluate(() => document.fonts.ready);
 

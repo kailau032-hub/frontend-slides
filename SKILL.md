@@ -276,12 +276,11 @@ When converting PowerPoint files:
    - **Reveal motion** — the on-slide entrance animation: default · off · dynamic
    - **Hover effect** — on cards/panels: off · lift · glow
    - **Pointer mode** — presenter aids: off · laser dot · spotlight
-   - **Animation playground (basic)** — live sliders for reveal **duration**, **stagger**, and
-     **distance**, plus **Replay**. (A fuller playground — per-reveal easing and animation
-     type — is a planned future extension of the same panel.)
 
-   To bake a fixed behaviour in without the editor, set the same `data-fx-*` attributes /
-   CSS variables directly in the HTML.
+   Note: the *default* motion is already chosen per template at generation time from
+   `animation-patterns.md` (its effect-to-feeling guide), so this step is a refinement, not
+   a requirement. To bake a fixed behaviour in without the editor, set the same `data-fx-*`
+   attributes / CSS variables directly in the HTML.
 
 ---
 
@@ -466,9 +465,18 @@ line-height**, **text colour + highlight**, **deck accent + slide-background**
 colour, **snap-to-grid with alignment guides**, insert **text box / image
 (embedded as a data URI) / video (URL or YouTube) / table / date**, slide
 operations (**add blank / duplicate / delete**), a **⚙ FX** panel (page-turn,
-reveal motion, hover, pointer mode, turn speed, and a basic **Animation
-Playground** — reveal duration/stagger/distance + replay; see Phase 5 step 4),
-and **⤓ Download**. Inserted elements are draggable, resizable, and deletable.
+reveal motion, hover, pointer mode, turn speed — see Phase 5 step 4), and
+**⤓ Download**. Inserted elements are draggable, resizable, and deletable.
+
+**Removing the control bar for outputs.** The editor toolbar is for authoring only —
+it must never appear in an audience-facing output. The module suppresses it whenever
+`<html>` carries `data-deck-locked` (effects still apply; no toolbar is built). So
+**before outputting an editor-enabled deck to ANY format, lock it first**:
+
+- `scripts/deploy.sh` (URL) and `scripts/export-pdf.sh` (PDF) do this automatically.
+- When **publishing an Artifact, screenshotting, or sending the file** to someone,
+  add `data-deck-locked` to the `<html>` tag of the copy you output (keep an unlocked
+  copy for further editing). Never publish/share a deck that still shows the toolbar.
 
 To include it, **inline the module's contents** in a `<script>` at the end of
 `<body>`, after the `<deck-stage>` script — inlining (not `<script src>`) keeps
