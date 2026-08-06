@@ -19,7 +19,9 @@
  *   ＋Slide ⧉ ⌫         add a blank slide / duplicate / delete the current slide
  *   ⚙ FX               presentation effects — page-turn (fade/slide/flip), reveal
  *                     motion, hover effect, pointer (laser/spotlight), and turn speed
- *   ⤓ Download         save the edited deck as a new self-contained .html
+ *   ⤓ Export changes   download the edited deck as a self-contained .html —
+ *                     hand it back to Claude to re-publish the SAME artifact
+ *                     URL (same file → same link, updated in place)
  *
  * Inserted images are embedded as data: URIs so the exported file stays
  * self-contained. Floating elements can be dragged by their grip, resized from
@@ -27,10 +29,11 @@
  * pixels back to the 1920×1080 design stage.
  *
  * The editor UI, its runtime attributes, and edit state are stripped from the
- * downloaded copy — the export opens clean (view mode) but keeps this module,
- * so the saved deck remains editable. For an audience-facing output (deployed
- * URL, PDF, shared file), add data-deck-locked to <html>: the module then loads
- * the chosen effects but builds no control bar at all.
+ * exported copy — it opens clean (view mode) but keeps this module, so the deck
+ * stays editable. The author's published artifact keeps this toolbar (it is the
+ * working surface). Only when SHARING to an audience or exporting a PDF, add
+ * data-deck-locked to <html>: the module then loads the chosen effects but
+ * builds no control bar at all.
  *
  * Requires: a <deck-stage> element in the page. No external dependencies.
  */
@@ -38,9 +41,10 @@
   if (window.__deckEditorLoaded) return;
   window.__deckEditorLoaded = true;
 
-  // Output/publish mode: when <html> has data-deck-locked, the module still applies
+  // Locked (audience) mode: when <html> has data-deck-locked, the module still applies
   // the chosen FX/effects (transitions, hover, pointer) but builds NO editor control
-  // bar — so deployed URLs, PDFs, and shared files never show the toolbar.
+  // bar — used for PDF exports and audience-shared copies. The author's own published
+  // artifact is NOT locked, so it keeps the toolbar as the working editing surface.
   const LOCKED = document.documentElement.hasAttribute('data-deck-locked');
 
   const EDIT_SEL = [
@@ -406,7 +410,7 @@
   const bDup = h('button', { text: '⧉', title: 'Duplicate slide', onmousedown: nP, onclick: dupSlide });
   const bDel = h('button', { text: '⌫', title: 'Delete slide', onmousedown: nP, onclick: delSlide });
   const bFX = h('button', { text: '⚙ FX', title: 'Presentation effects (page-turn, motion, hover, pointer)', onmousedown: nP, onclick: () => fxPanel(bFX) });
-  const bDl = h('button', { text: '⤓ Download', onclick: download });
+  const bDl = h('button', { text: '⤓ Export changes', onclick: download });
   const sep = () => h('span', { class: 'dke-sep' });
 
   const bar = h('div', { class: 'dke-bar' }, [

@@ -327,6 +327,25 @@ embed or inline that asset first — the Artifact must have no external
 dependencies. Fonts in particular: fetch the font files and embed them as
 base64 `@font-face` `src`, or fall back to a self-contained font stack.
 
+**Updating a published deck — the edit loop.** Re-publishing the **same file** in
+the same conversation keeps the **same artifact URL**, so edits land in place —
+no new link. There is **no** runtime capability for a published page to update
+its own URL or to reach back into this terminal (an account's artifact runtime
+only exposes `downloads` and `mcp`), so same-URL updates always run through you,
+the agent. Two ways changes come to you:
+
+1. **You edit the source** — the user asks for a change here; you edit the HTML
+   file and re-publish the same file. The sidebar URL updates in place.
+2. **The user edits in the browser** — if the deck ships with the in-browser
+   editor (below), the artifact keeps its toolbar so the user can tweak visually,
+   then click **⤓ Export changes** to download the edited `.html`. They hand that
+   file back to you; you re-publish it to the **same** artifact URL.
+
+Because of loop #2, the artifact you publish for the author to iterate on **keeps
+the editor toolbar** — it is their working surface, not a locked presentation.
+Only lock it (strip the toolbar) when the deck is being **shared with an audience
+or exported to PDF** — see "Removing the control bar for outputs" below.
+
 ### 6B: Export to PDF
 
 This captures each slide as a screenshot and combines them into a PDF. Perfect for email attachments, embedding in documents, or printing.
@@ -429,20 +448,27 @@ colour, **snap-to-grid with alignment guides**, insert **text box / image
 (embedded as a data URI) / video (URL or YouTube) / table / date**, slide
 operations (**add blank / duplicate / delete**), a **⚙ FX** panel (page-turn,
 reveal motion, hover, pointer mode, turn speed — see Phase 5 step 4), and
-**⤓ Download**. Inserted elements are draggable, resizable, and deletable.
+**⤓ Export changes** — downloads the edited deck as a self-contained `.html` the
+user hands back to you to re-publish to the **same** artifact URL (the edit loop
+in Phase 6A). Inserted elements are draggable, resizable, and deletable.
 
-**Removing the control bar for outputs.** The editor toolbar is for authoring only —
-it must never appear in an audience-facing output. The module suppresses it whenever
-`<html>` carries `data-deck-locked` (effects still apply; no toolbar is built). So
-**before outputting an editor-enabled deck to ANY format, lock it first**:
+**Control bar: keep it in the author's artifact, strip it for the audience.**
+The published artifact the author iterates on **keeps** the toolbar — it is their
+working surface, and the edit loop (Export changes → you re-publish the same file)
+depends on it. Do **not** lock the author's own artifact.
+
+Lock the deck (strip the toolbar) only for an **audience-facing output** — a copy
+**shared with other people** or a **PDF export**. The module suppresses the toolbar
+whenever `<html>` carries `data-deck-locked` (effects still apply; no toolbar is
+built). So:
 
 - `scripts/export-pdf.sh` (PDF) does this automatically.
-- When **publishing an Artifact, screenshotting, or sending the file** to someone,
-  add `data-deck-locked` to the `<html>` tag of the copy you output (keep an unlocked
-  copy for further editing). Never publish/share a deck that still shows the toolbar.
-  (For an Artifact, also add an early `<script>document.documentElement.setAttribute('data-deck-locked','')</script>`
+- When **sharing the deck with an audience, screenshotting, or sending the file**,
+  produce a **locked copy**: add `data-deck-locked` to its `<html>` tag (keep the
+  unlocked copy for further editing). For a shared Artifact, also add an early
+  `<script>document.documentElement.setAttribute('data-deck-locked','')</script>`
   in `<head>` — the Artifact wrapper can drop the `<html>` attribute, so the script
-  guarantees the lock at runtime.)
+  guarantees the lock at runtime. Never share an audience copy that still shows the toolbar.
 
 To include it, **inline the module's contents** in a `<script>` at the end of
 `<body>`, after the `<deck-stage>` script — inlining (not `<script src>`) keeps
@@ -457,8 +483,8 @@ the deck a single self-contained file:
 
 Notes:
 - The editor's UI, its runtime attributes, and edit state are stripped from the
-  downloaded copy, so the export opens clean (view mode) but keeps the module —
-  the saved deck stays editable.
+  exported copy, so it opens clean (view mode) but keeps the module — the deck
+  stays editable, so re-publishing the returned file keeps the same artifact URL.
 - The toolbar and drag handles are hidden in `@media print`, so Print → Save as
   PDF stays clean.
 - The accent-colour control recolours the CSS variables the templates use
