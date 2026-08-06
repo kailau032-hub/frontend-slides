@@ -60,7 +60,7 @@ mkdir -p ~/.claude/skills/frontend-slides/scripts
 # Copy the user-facing skill files
 cp SKILL.md STYLE_PRESETS.md viewport-base.css html-template.md animation-patterns.md ~/.claude/skills/frontend-slides/
 cp -R bold-template-pack ~/.claude/skills/frontend-slides/
-cp scripts/extract-pptx.py scripts/deploy.sh scripts/export-pdf.sh ~/.claude/skills/frontend-slides/scripts/
+cp scripts/extract-pptx.py scripts/export-pdf.sh ~/.claude/skills/frontend-slides/scripts/
 ```
 
 Or clone directly:
@@ -565,7 +565,6 @@ This skill uses **progressive disclosure** — the main `SKILL.md` is a workflow
 | `html-template.md`        | HTML structure and JS features | Phase 3 (generation)      |
 | `animation-patterns.md`   | CSS/JS animation reference     | Phase 3 (generation)      |
 | `scripts/extract-pptx.py` | PPT content extraction         | Phase 4 (conversion)      |
-| `scripts/deploy.sh`       | Deploy to Vercel               | Phase 6 (sharing)         |
 | `scripts/export-pdf.sh`   | Export slides to PDF           | Phase 6 (sharing)         |
 | `scripts/sync-plugin.sh`  | (Re)create the plugin's symlinks to the canonical root skill | Maintenance |
 
@@ -599,27 +598,15 @@ After creating a presentation, the skill offers a live URL or a PDF.
 
 ### Publish to a Live URL
 
-There are two ways to get a shareable link that works on any device — phones, tablets, laptops:
-
-**Claude Artifact (preferred when running inside Claude).** Because every deck is
-a single self-contained HTML file, Claude can publish it directly as an
+Get a shareable link that works on any device — phones, tablets, laptops — as a
+**Claude Artifact.** Because every deck is a single self-contained HTML file,
+Claude can publish it directly as an
 [Artifact](https://support.anthropic.com/en/articles/9487310-what-are-artifacts) —
 a hosted claude.ai page — with no account, token, CLI, or third-party service.
 Just ask Claude to publish the finished deck; you get a private URL you can
 choose to share, and re-publishing keeps the same link. (Artifacts run under a
 strict no-external-resources sandbox, so remote fonts/images must be embedded —
 Claude handles that before publishing.)
-
-**Vercel (any agent, or when you want your own hosting/domain).** One command
-deploys your slides to a permanent, shareable URL:
-
-```bash
-bash scripts/deploy.sh ./my-deck/
-# or
-bash scripts/deploy.sh ./presentation.html
-```
-
-Uses [Vercel](https://vercel.com) (free tier). The skill walks you through signup and login if it's your first time.
 
 ### Export to PDF
 
@@ -637,7 +624,7 @@ Uses [Playwright](https://playwright.dev) to screenshot each slide at 1920×1080
 - A local coding agent with filesystem access and the ability to run shell commands
 - Claude Code is required only for the custom marketplace-source install and `/frontend-slides:frontend-slides` command
 - For PPT conversion: Python with `python-pptx` library
-- For URL deployment: Node.js + Vercel account (free)
+- For a live URL: Claude (publishes the deck as an Artifact — no account or service needed)
 - For PDF export: Node.js (Playwright installs automatically)
 
 ## Credits
